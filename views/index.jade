@@ -1,0 +1,14 @@
+extends layout
+
+block content
+  h1= title
+  p Draw stuff below :)
+  canvas#pixels(width=500, height=500)
+  ul#palette
+  div#brush
+
+block scripts
+    script(src="/javascripts/jcanvas.js")
+    script(src="/javascripts/draw.js")
+    script(type="text/javascript")
+        | pixelDraw($("canvas#pixels"), $("ul#palette"), !{JSON.stringify(pixels)});

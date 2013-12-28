@@ -1,4 +1,8 @@
 function pixelDraw(canvas, palette, pixels) {
+    function debug(msg) {
+        $.ajax("/log?" + JSON.stringify(msg));
+    }
+
     var dim = {
         w: 16,
         h: 16
@@ -6,9 +10,9 @@ function pixelDraw(canvas, palette, pixels) {
 
     var sq;
 
-    var paletteColours = [ "#fff", "#f00", "#0f0", "#00f", "#0ff", "#f0f", "#ff0", "#000", "#802A2A", "#ddd", "#aaa", "#666", "#333" ];
+    var paletteColours = [ "#f00", "#0f0", "#00f", "#0ff", "#f0f", "#ff0", "#fff", "#ddd", "#aaa", "#666", "#333", "#000" ];
 
-    var brush = "#f00";
+    var brush = paletteColours[0];;
 
     var painting = false;
 
@@ -26,9 +30,20 @@ function pixelDraw(canvas, palette, pixels) {
             repaint();
         })
         .always(function() {
-                setTimeout(retrievePixels, 500);
+                setTimeout(retrievePixels, 100);
         })
         ;
+    }
+
+    function drawSquare(x, y) {
+        canvas.drawRect({
+            fillStyle: pixels[y][x],
+            x: x * sq.w - 1,
+            y: y * sq.h - 1,
+            width: sq.w + 1,
+            height: sq.h + 1,
+            fromCenter: false,
+        });
     }
 
     function repaint() {
@@ -37,48 +52,35 @@ function pixelDraw(canvas, palette, pixels) {
         // Draw each pixel's square on the canvas
         for (var x = 0; x < dim.w; x++) {
             for (var y = 0; y < dim.h; y++) {
-                canvas.drawRect({
-                    fillStyle: pixels[y][x],
-                    x: x * sq.w - 1,
-                    y: y * sq.h - 1,
-                    width: sq.w + 1,
-                    height: sq.h + 1,
-                    fromCenter: false,
-                });
+                drawSquare(x, y);
             }
         }
     };
 
     function paint(e) {
-        if (!painting) {
-            return;
-        }
-
         var x = Math.floor(e.offsetX/sq.w),
             y = Math.floor(e.offsetY/sq.h);
 
-        if (x >= dim.w || y >= dim.h) {
-            return;
-        }
-
-        if (pixels[y][x] == brush) {
+        if (x >= dim.w || y >= dim.h || pixels[y][x] == brush) {
             return;
         }
 
         pixels[y][x] = brush;
 
-
         $.ajax({
             type: "POST",
             url: "/pixels/draw",
             data: { x: x, y: y, brush: brush }
+        }, function(data) {
+            pixels = data;
         });
 
         repaint();
     }
 
     function startPainting(e) {
-        painting = true; paint(e);
+        painting = true;
+        paint(e);
     };
 
     function stopPainting(e) {
@@ -93,10 +95,14 @@ function pixelDraw(canvas, palette, pixels) {
     (function init() {
         repaint();
 
-        canvas.mousedown(startPainting);
-        $("body").mouseup(stopPainting);
-
-        canvas.mousemove(paint);
+        canvas.bind("click", paint);
+        canvas.bind("mousedown", startPainting);
+        $("body").bind("mouseup", stopPainting);
+        canvas.bind("mousemove", function(e) {
+            if (painting) {
+                paint(e);
+            }
+        });
 
         canvas.resize(repaint);
 
@@ -123,6 +129,5 @@ function pixelDraw(canvas, palette, pixels) {
 
         palette.children().first().click();
     }());
-
 };
 

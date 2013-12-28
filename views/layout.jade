@@ -3,9 +3,10 @@ html
   head
     title= title
     link(rel='stylesheet', href='/stylesheets/style.css')
-  body
-    block content
+    meta(name='viewport', content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
 
-    script(src="/javascripts/jquery-2.0.3.js")
+body
+    div#content
+        block content
 
     block scripts

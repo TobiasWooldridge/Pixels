@@ -50,15 +50,16 @@ var dimensions = { w : 16, h: 16 };
 var userLayer = createPixelMap(dimensions.w, dimensions.h, "#000");
 var systemLayer = createPixelMap(dimensions.w, dimensions.h, undefined);
 
-//
-//var moo = 0;
-//setInterval(function() {
-//    systemLayer = createPixelMap(16, 16, undefined, systemLayer);
-//
-//    systemLayer[moo][1] = "#fff";
-//
-//    moo = (moo + 1) % 16;
-//}, 200);
+
+var moo = 0;
+setInterval(function() {
+    systemLayer = createPixelMap(16, 16, undefined, systemLayer);
+
+    systemLayer[8][moo] = "#fff";
+    systemLayer[9][moo] = "#fff";
+
+    moo = (moo + 31) % 16;
+}, 200);
 
 var layers = [ userLayer, systemLayer ];
 

@@ -12,7 +12,9 @@ function pixelDraw(canvas, palette, pixels) {
 
     var paletteColours = [ "#f00", "#0f0", "#00f", "#0ff", "#f0f", "#ff0", "#fff", "#ddd", "#aaa", "#666", "#333", "#000" ];
 
-    var brush = paletteColours[0];;
+    var brush = paletteColours[0];
+
+    var drawLayer = 1;
 
     var painting = false;
 
@@ -35,9 +37,9 @@ function pixelDraw(canvas, palette, pixels) {
         ;
     }
 
-    function drawSquare(x, y) {
+    function drawSquare(x, y, color) {
         canvas.drawRect({
-            fillStyle: pixels[y][x],
+            fillStyle: color,
             x: x * sq.w - 1,
             y: y * sq.h - 1,
             width: sq.w + 1,
@@ -50,9 +52,11 @@ function pixelDraw(canvas, palette, pixels) {
         updateSquare();
 
         // Draw each pixel's square on the canvas
-        for (var x = 0; x < dim.w; x++) {
-            for (var y = 0; y < dim.h; y++) {
-                drawSquare(x, y);
+        for (var layer = 0; layer < pixels.layers.length; layer++) {
+            for (var x = 0; x < dim.w; x++) {
+                for (var y = 0; y < dim.h; y++) {
+                    drawSquare(x, y, pixels.layers[layer].canvas[y][x]);
+                }
             }
         }
     };
@@ -61,11 +65,11 @@ function pixelDraw(canvas, palette, pixels) {
         var x = Math.floor(e.offsetX/sq.w),
             y = Math.floor(e.offsetY/sq.h);
 
-        if (x >= dim.w || y >= dim.h || pixels[y][x] == brush) {
+        if (x >= dim.w || y >= dim.h || pixels.layers[drawLayer].canvas[y][x] == brush) {
             return;
         }
 
-        pixels[y][x] = brush;
+        pixels.layers[drawLayer].canvas[y][x] = brush;
 
         $.ajax({
             type: "POST",

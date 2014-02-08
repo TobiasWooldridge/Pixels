@@ -1,80 +1,30 @@
-/*
- * GET pixels.
- */
-
-function createPixelMap(width, height, fill, pixelMap) {
-    if (pixelMap == undefined) {
-        pixelMap = [];
-    }
-
-    // Create rows
-    for (var y = 0; y < height; y++) {
-        pixelMap[y] = [];
-
-        // Fill rows with fill
-        for (var x = 0; x < width; x++) {
-            pixelMap[y][x] = fill;
-        }
-    }
-
-    return pixelMap;
-}
-
-/*
-Compose every passed layers into a single image.
- */
-function mergePixelMaps(a, b) {
-    // Create rows
-    for (var y = 0; y < a.length; y++) {
-        // Fill rows with fill
-        for (var x = 0; x < a[0].length; x++) {
-            if (b[y][x] !== undefined) {
-                a[y][x] = b[y][x];
-            }
-        }
-    }
-}
-
-function compositLayers(layers) {
-    var canvas = createPixelMap(layers[0][0].length, layers[0].length, '#fff');
-
-    for (var i = 0; i < layers.length; i++) {
-        mergePixelMaps(canvas, layers[i]);
-    }
-
-    return canvas;
-}
+var layeredCanvas = require('../lib/layeredCanvas.js');
 
 var dimensions = { w : 16, h: 16 };
 
-var userLayer = createPixelMap(dimensions.w, dimensions.h, "#000");
-var systemLayer = createPixelMap(dimensions.w, dimensions.h, undefined);
+var layeredCanvas = layeredCanvas.createLayeredCanvas(dimensions.w, dimensions.h, 3, 'rgba(0, 0, 0, 1)');
 
 
 var moo = 0;
 setInterval(function() {
-    systemLayer = createPixelMap(16, 16, undefined, systemLayer);
+    layeredCanvas.layers[2].clear();
 
-    systemLayer[8][moo] = "#fff";
-    systemLayer[9][moo] = "#fff";
+    layeredCanvas.layers[2].canvas[moo][moo] = 'rgba(255, 255, 255, 0.8)';
 
-    moo = (moo + 31) % 16;
-}, 200);
-
-var layers = [ userLayer, systemLayer ];
+    moo = (moo + 1) % 16;
+}, 1000);
 
 exports.index = function(req, res){
-    res.render('index', { title: 'Pixels', pixels: compositLayers(layers) });
+    res.render('index', { title: 'Pixels', layeredCanvas: layeredCanvas });
 };
 
 exports.get = function(req, res){
-    res.send(compositLayers(layers));
+    res.send(layeredCanvas);
 };
 
 var hexCode = /\#[0-9a-f]{3}([0-9a-f]{3})?/i;
 
 exports.post = function(req, res){
-
     var change = req.body;
 
     console.log(change);
@@ -83,7 +33,7 @@ exports.post = function(req, res){
         return
     }
 
-    userLayer[change.y][change.x] = change.brush;
+    layeredCanvas.layers[1].canvas[change.y][change.x] = change.brush;
 
-    res.send(compositLayers(layers));
+    res.send(layeredCanvas);
 };

@@ -1,8 +1,4 @@
 function pixelDraw(canvas, palette, pixels) {
-    function debug(msg) {
-        $.ajax("/log?" + JSON.stringify(msg));
-    }
-
     var dim = {
         w: 16,
         h: 16
@@ -18,7 +14,7 @@ function pixelDraw(canvas, palette, pixels) {
 
     var painting = false;
 
-    function updateSquare() {
+    function updateSquareDimensions() {
         sq = {
             w: canvas.width() / dim.w,
             h: canvas.height() / dim.h
@@ -32,24 +28,33 @@ function pixelDraw(canvas, palette, pixels) {
             repaint();
         })
         .always(function() {
-                setTimeout(retrievePixels, 100);
-        })
-        ;
-    }
-
-    function drawSquare(x, y, color) {
-        canvas.drawRect({
-            fillStyle: color,
-            x: x * sq.w - 1,
-            y: y * sq.h - 1,
-            width: sq.w + 1,
-            height: sq.h + 1,
-            fromCenter: false,
+            setTimeout(retrievePixels, 100);
         });
     }
 
     function repaint() {
-        updateSquare();
+        function drawSquare(x, y, color) {
+            var margin = 2;
+            canvas.drawRect({
+                fillStyle: color,
+                x: x * sq.w + margin/2,
+                y: y * sq.h + margin/2,
+                width: sq.w - margin,
+                height: sq.h - margin,
+                fromCenter: false,
+            });
+        }
+
+        updateSquareDimensions();
+
+        canvas.drawRect({
+            fillStyle: '#000',
+            x: 0,
+            y: 0,
+            width: canvas.width(),
+            height: canvas.height(),
+            fromCenter: false
+        });
 
         // Draw each pixel's square on the canvas
         for (var layer = 0; layer < pixels.layers.length; layer++) {

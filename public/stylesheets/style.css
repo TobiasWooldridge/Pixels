@@ -11,7 +11,7 @@ a {
 }
 canvas {
   border: 1px solid #ccc;
-  background: #ccc;
+  background: #333;
   cursor: pointer;
 }
 ul#palette {

@@ -4,16 +4,6 @@ var dimensions = { w : 16, h: 16 };
 
 var layeredCanvas = layeredCanvas.createLayeredCanvas(dimensions.w, dimensions.h, 3, 'rgba(0, 0, 0, 1)');
 
-
-var moo = 0;
-setInterval(function() {
-    layeredCanvas.layers[2].clear();
-
-    layeredCanvas.layers[2].canvas[moo][moo] = 'rgba(255, 255, 255, 0.8)';
-
-    moo = (moo + 1) % 16;
-}, 1000);
-
 exports.index = function(req, res){
     res.render('index', { title: 'Pixels', layeredCanvas: layeredCanvas });
 };

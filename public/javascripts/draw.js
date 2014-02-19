@@ -1,4 +1,7 @@
-function pixelDraw(canvas, palette, pixels) {
+function pixelDraw(canvasId, palette) {
+    var canvas;
+    var ctx;
+
     var dim = {
         w: 16,
         h: 16
@@ -14,54 +17,125 @@ function pixelDraw(canvas, palette, pixels) {
 
     var painting = false;
 
+    var sq;
+
     function updateSquareDimensions() {
         sq = {
-            w: canvas.width() / dim.w,
-            h: canvas.height() / dim.h
+            w: canvas.width / dim.w,
+            h: canvas.height / dim.h
         }
     }
 
-    function retrievePixels() {
+    /*
+     * memoize.js
+     * by @philogb and @addyosmani
+     * with further optimizations by @mathias
+     * and @DmitryBaranovsk
+     * perf tests: http://bit.ly/q3zpG3
+     * Released under an MIT license.
+     */
+    function memoize( fn ) {
+        return function () {
+            var args = Array.prototype.slice.call(arguments),
+                hash = "",
+                i = args.length;
+            currentArg = null;
+            while (i--) {
+                currentArg = args[i];
+                hash += (currentArg === Object(currentArg)) ?
+                    JSON.stringify(currentArg) : currentArg;
+                fn.memoize || (fn.memoize = {});
+            }
+            return (hash in fn.memoize) ? fn.memoize[hash] :
+                fn.memoize[hash] = fn.apply(this, args);
+        };
+    }
+
+    function retrievePixels(callback) {
         $.ajax("/pixels")
         .done(function(data) {
             pixels = data;
-            repaint();
+            repaintAll();
+
+            if (callback != undefined) {
+                callback();
+            }
         })
         .always(function() {
             setTimeout(retrievePixels, 100);
         });
     }
 
-    function repaint() {
-        function drawSquare(x, y, color) {
-            var margin = 2;
-            canvas.drawRect({
-                fillStyle: color,
-                x: x * sq.w + margin/2,
-                y: y * sq.h + margin/2,
-                width: sq.w - margin,
-                height: sq.h - margin,
-                fromCenter: false,
-            });
+
+    var parseColor = memoize(function parseColor(color) {
+        if (color.substring(0,1) == "#") {
+            if (color.length == 4) {
+                return [
+                    parseInt(color.substring(1,2), 16) * 16,
+                    parseInt(color.substring(2,3), 16) * 16,
+                    parseInt(color.substring(3,4), 16) * 16,
+                    256
+                ]
+            }
+
+
+            return [
+                parseInt(color.substring(1,3), 16),
+                parseInt(color.substring(3,5), 16),
+                parseInt(color.substring(5,7), 16),
+                parseInt(color.substring(7,9), 16) | 255
+            ];
+        }
+        else {
+            var channels = [];
+
+            var re = /([0-9\.]+)/g;
+            do {
+                var m = re.exec(color);
+                if (m) {
+                    channels.push(m[1]);
+                }
+            } while (m);
+
+            if (channels.length == 3) {
+                channels.push(1);
+            }
+
+            channels[3] *= 255;
+
+            return channels;
+        }
+    });
+
+
+    var createColoredSquare = memoize(function createColoredSquare(sq, color) {
+        var img = ctx.createImageData(sq.w, sq.h);
+
+        for (var i = 0; i < img.data.length; i += 4) {
+            // Funroll-loops
+            img.data[i + 0] = color[0];
+            img.data[i + 1] = color[1];
+            img.data[i + 2] = color[2];
+            img.data[i + 3] = color[3];
         }
 
+        return img;
+    });
+
+    function repaintSquare(x, y) {
         updateSquareDimensions();
 
-        canvas.drawRect({
-            fillStyle: '#000',
-            x: 0,
-            y: 0,
-            width: canvas.width(),
-            height: canvas.height(),
-            fromCenter: false
-        });
+        var color = parseColor(pixels.layers[1].canvas[y][x]);
 
-        // Draw each pixel's square on the canvas
-        for (var layer = 0; layer < pixels.layers.length; layer++) {
-            for (var x = 0; x < dim.w; x++) {
-                for (var y = 0; y < dim.h; y++) {
-                    drawSquare(x, y, pixels.layers[layer].canvas[y][x]);
-                }
+        var img = createColoredSquare(sq, color);
+
+        ctx.putImageData(img, x * sq.w, y * sq.h);
+    }
+
+    function repaintAll() {
+        for (var x = 0; x < dim.w; x++) {
+            for (var y = 0; y < dim.h; y++) {
+                repaintSquare(x, y);
             }
         }
     };
@@ -76,15 +150,13 @@ function pixelDraw(canvas, palette, pixels) {
 
         pixels.layers[drawLayer].canvas[y][x] = brush;
 
+        repaintSquare(x, y);
+
         $.ajax({
             type: "POST",
             url: "/pixels/draw",
             data: { x: x, y: y, brush: brush }
-        }, function(data) {
-            pixels = data;
         });
-
-        repaint();
     }
 
     function startPainting(e) {
@@ -101,19 +173,19 @@ function pixelDraw(canvas, palette, pixels) {
         $("#brush").css("background", brush);
     }
 
-    (function init() {
-        repaint();
+    function setUpCanvas() {
+        repaintAll();
 
-        canvas.bind("click", paint);
-        canvas.bind("mousedown", startPainting);
+        $(canvas).bind("click", paint);
+        $(canvas).bind("mousedown", startPainting);
         $("body").bind("mouseup", stopPainting);
-        canvas.bind("mousemove", function(e) {
+        $(canvas).bind("mousemove", function(e) {
             if (painting) {
                 paint(e);
             }
         });
 
-        canvas.resize(repaint);
+        $(canvas).resize(repaintAll);
 
         retrievePixels();
 
@@ -137,6 +209,14 @@ function pixelDraw(canvas, palette, pixels) {
         }
 
         palette.children().first().click();
+    }
+
+    (function init() {
+        canvas = document.getElementById("pixels");
+        ctx = canvas.getContext('2d');
+
+
+        retrievePixels(setUpCanvas);
     }());
 };
 

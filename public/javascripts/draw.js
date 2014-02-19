@@ -1,6 +1,9 @@
 function pixelDraw(canvasId, palette) {
     var canvas;
     var ctx;
+    var socket;
+
+    var pixels;
 
     var dim = {
         w: 16,
@@ -57,7 +60,7 @@ function pixelDraw(canvasId, palette) {
             pixels = data;
             repaintAll();
 
-            if (callback != undefined) {
+            if (callback) {
                 callback();
             }
         })
@@ -70,6 +73,7 @@ function pixelDraw(canvasId, palette) {
     var parseColor = memoize(function parseColor(color) {
         if (color.substring(0,1) == "#") {
             if (color.length == 4) {
+                // #FFF
                 return [
                     parseInt(color.substring(1,2), 16) * 16,
                     parseInt(color.substring(2,3), 16) * 16,
@@ -78,7 +82,7 @@ function pixelDraw(canvasId, palette) {
                 ]
             }
 
-
+            // #FFFFFF
             return [
                 parseInt(color.substring(1,3), 16),
                 parseInt(color.substring(3,5), 16),
@@ -87,13 +91,14 @@ function pixelDraw(canvasId, palette) {
             ];
         }
         else {
+            // rgba(255, 255, 255, 1)
             var channels = [];
 
             var re = /([0-9\.]+)/g;
             do {
                 var m = re.exec(color);
                 if (m) {
-                    channels.push(m[1]);
+                    channels.push(+m[1]);
                 }
             } while (m);
 
@@ -152,11 +157,7 @@ function pixelDraw(canvasId, palette) {
 
         repaintSquare(x, y);
 
-        $.ajax({
-            type: "POST",
-            url: "/pixels/draw",
-            data: { x: x, y: y, brush: brush }
-        });
+        socket.emit('draw', { x: x, y: y, brush: brush });
     }
 
     function startPainting(e) {
@@ -174,8 +175,6 @@ function pixelDraw(canvasId, palette) {
     }
 
     function setUpCanvas() {
-        repaintAll();
-
         $(canvas).bind("click", paint);
         $(canvas).bind("mousedown", startPainting);
         $("body").bind("mouseup", stopPainting);
@@ -186,8 +185,6 @@ function pixelDraw(canvasId, palette) {
         });
 
         $(canvas).resize(repaintAll);
-
-        retrievePixels();
 
         function changeSwatch(swatch, color) {
             return function doChangeSwatch() {
@@ -214,9 +211,18 @@ function pixelDraw(canvasId, palette) {
     (function init() {
         canvas = document.getElementById("pixels");
         ctx = canvas.getContext('2d');
+        setUpCanvas();
 
+        socket = io.connect('http://121.210.132.104:3000');
+        socket.on('setPixels', function (data) {
+            pixels = data;
+            repaintAll();
+        });
 
-        retrievePixels(setUpCanvas);
+        socket.on('setPixel', function (change) {
+            pixels.layers[1].canvas[change.y][change.x] = change.brush;
+            repaintSquare(change.x, change.y);
+        });
     }());
 };
 

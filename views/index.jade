@@ -7,17 +7,9 @@ block content
   ul#palette
   div#brush
 
-  | <script src="/socket.io/socket.io.js"></script>
-  | <script>
-  | var socket = io.connect('http://localhost:3000');
-  | socket.on('news', function (data) {
-  | console.log(data);
-  | socket.emit('my other event', { my: 'data' });
-  | });
-  | </script>
-
 block scripts
     script(src="/javascripts/jquery-2.0.3.js")
     script(src="/javascripts/draw.js")
+    script(src="/socket.io/socket.io.js")
     script(type="text/javascript")
-        | pixelDraw("canvas#pixels", $("ul#palette"));
+      | pixelDraw("canvas#pixels", $("ul#palette"));

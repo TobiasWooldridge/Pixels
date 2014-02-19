@@ -8,12 +8,11 @@ exports.index = function(req, res){
     res.render('index', { title: 'Pixels' });
 };
 
-exports.get = function(req, res){
-    res.send(layeredCanvas);
-};
 
-exports.post = function(req, res){
-    var change = req.body;
+exports.getCanvas = function(){
+    return layeredCanvas;
+}
 
+exports.drawPixel = function(change){
     layeredCanvas.layers[1].canvas[change.y][change.x] = change.brush;
-};
+}

@@ -29,8 +29,6 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/', pixel.index);
-app.get('/pixels', pixel.get);
-app.post('/pixels/draw', pixel.post);
 
 var server = http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
@@ -39,8 +37,11 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 
 var io = require('socket.io').listen(server);
 io.sockets.on('connection', function (socket) {
-    socket.emit('news', { hello: 'world' });
-    socket.on('my other event', function (data) {
-        console.log(data);
+    socket.emit('setPixels', pixel.getCanvas());
+
+    socket.on('draw', function(change) {
+        pixel.drawPixel(change);
+
+        socket.broadcast.emit('setPixel', change);
     });
 });

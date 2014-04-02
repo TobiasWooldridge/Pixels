@@ -10,8 +10,6 @@ function pixelDraw(canvasId, palette) {
         h: 16
     };
 
-    var sq;
-
     var paletteColours = [ "#f00", "#0f0", "#00f", "#0ff", "#f0f", "#ff0", "#fff", "#ddd", "#aaa", "#666", "#333", "#000" ];
 
     var brush = paletteColours[0];
@@ -29,30 +27,6 @@ function pixelDraw(canvasId, palette) {
         }
     }
 
-    /*
-     * memoize.js
-     * by @philogb and @addyosmani
-     * with further optimizations by @mathias
-     * and @DmitryBaranovsk
-     * perf tests: http://bit.ly/q3zpG3
-     * Released under an MIT license.
-     */
-    function memoize( fn ) {
-        return function () {
-            var args = Array.prototype.slice.call(arguments),
-                hash = "",
-                i = args.length;
-            currentArg = null;
-            while (i--) {
-                currentArg = args[i];
-                hash += (currentArg === Object(currentArg)) ?
-                    JSON.stringify(currentArg) : currentArg;
-                fn.memoize || (fn.memoize = {});
-            }
-            return (hash in fn.memoize) ? fn.memoize[hash] :
-                fn.memoize[hash] = fn.apply(this, args);
-        };
-    }
 
     function retrievePixels(callback) {
         $.ajax("/pixels")
@@ -213,7 +187,7 @@ function pixelDraw(canvasId, palette) {
         ctx = canvas.getContext('2d');
         setUpCanvas();
 
-        socket = io.connect('http://121.210.132.104:3000');
+        socket = io.connect();
         socket.on('setPixels', function (data) {
             pixels = data;
             repaintAll();

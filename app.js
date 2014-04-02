@@ -7,6 +7,7 @@ var express = require('express');
 var pixel = require('./routes/pixel');
 var http = require('http');
 var path = require('path');
+var color = require('./lib/color')
 
 var app = express();
 
@@ -40,8 +41,9 @@ io.sockets.on('connection', function (socket) {
     socket.emit('setPixels', pixel.getCanvas());
 
     socket.on('draw', function(change) {
-        pixel.drawPixel(change);
-
-        socket.broadcast.emit('setPixel', change);
+        var brush = color.parseColor(change.brush);
+        pixel.drawPixel(change.x, change.y, brush);
+        socket.broadcast.emit('setPixel', { x: change.x, y: change.y, brush: brush.toRgb() });
+        socket.emit('setPixel', { x: change.x, y: change.y, brush: brush.toRgb() });
     });
 });

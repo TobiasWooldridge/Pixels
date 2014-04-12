@@ -6,11 +6,28 @@ function pixelDraw(canvasId, palette) {
     var pixels;
 
     var dim = {
-        w: 16,
-        h: 16
+        w: 8,
+        h: 8
     };
 
-    var paletteColours = [ "#f00", "#0f0", "#00f", "#0ff", "#f0f", "#ff0", "#fff", "#ddd", "#aaa", "#666", "#333", "#000" ];
+    var paletteColours = [
+        "#ff0000",
+        "#00ff00",
+        "#0000ff",
+        "#00ffff",
+        "#ff00ff",
+        "#ffff00",
+        "#ffffff",
+        "#dddddd",
+        "#aaaaaa",
+        "#666666",
+        "#333333",
+        "#000000",
+        "#0140CA",
+        "#DD1812",
+        "#FCCA03",
+        "#16A61E"
+    ];
 
     var brush = paletteColours[0];
 

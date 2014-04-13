@@ -1,3 +1,5 @@
+var Color = require('color');
+
 function pixelDraw(canvasId, palette) {
     var canvas;
     var ctx;
@@ -60,50 +62,6 @@ function pixelDraw(canvasId, palette) {
         });
     }
 
-
-    var parseColor = memoize(function parseColor(color) {
-        if (color.substring(0,1) == "#") {
-            if (color.length == 4) {
-                // #FFF
-                return [
-                    parseInt(color.substring(1,2), 16) * 16,
-                    parseInt(color.substring(2,3), 16) * 16,
-                    parseInt(color.substring(3,4), 16) * 16,
-                    256
-                ]
-            }
-
-            // #FFFFFF
-            return [
-                parseInt(color.substring(1,3), 16),
-                parseInt(color.substring(3,5), 16),
-                parseInt(color.substring(5,7), 16),
-                parseInt(color.substring(7,9), 16) | 255
-            ];
-        }
-        else {
-            // rgba(255, 255, 255, 1)
-            var channels = [];
-
-            var re = /([0-9\.]+)/g;
-            do {
-                var m = re.exec(color);
-                if (m) {
-                    channels.push(+m[1]);
-                }
-            } while (m);
-
-            if (channels.length == 3) {
-                channels.push(1);
-            }
-
-            channels[3] *= 255;
-
-            return channels;
-        }
-    });
-
-
     var createColoredSquare = memoize(function createColoredSquare(sq, color) {
         var img = ctx.createImageData(sq.w, sq.h);
 
@@ -112,16 +70,20 @@ function pixelDraw(canvasId, palette) {
             img.data[i + 0] = color[0];
             img.data[i + 1] = color[1];
             img.data[i + 2] = color[2];
-            img.data[i + 3] = color[3];
+            img.data[i + 3] = 255;
         }
 
         return img;
     });
 
+    function colorToRgb(color) {
+        return Color.parseColor(color || "#000000").toRgb()
+    }
+
     function repaintSquare(x, y) {
         updateSquareDimensions();
 
-        var color = parseColor(pixels.layers[1].canvas[y][x]);
+        var color = Color.parseColor(pixels[y][x]).toArray();
 
         var img = createColoredSquare(sq, color);
 
@@ -140,11 +102,11 @@ function pixelDraw(canvasId, palette) {
         var x = Math.floor(e.offsetX/sq.w),
             y = Math.floor(e.offsetY/sq.h);
 
-        if (x >= dim.w || y >= dim.h || pixels.layers[drawLayer].canvas[y][x] == brush) {
+        if (x >= dim.w || y >= dim.h || colorToRgb(pixels[y][x]) == colorToRgb(brush)) {
             return;
         }
 
-        pixels.layers[drawLayer].canvas[y][x] = brush;
+        pixels[y][x] = brush;
 
         repaintSquare(x, y);
 
@@ -160,8 +122,8 @@ function pixelDraw(canvasId, palette) {
         painting = false;
     };
 
-    function setBrush(color) {
-        brush = color;
+    function setBrush(b) {
+        brush = b;
         $("#brush").css("background", brush);
     }
 
@@ -211,7 +173,7 @@ function pixelDraw(canvasId, palette) {
         });
 
         socket.on('setPixel', function (change) {
-            pixels.layers[1].canvas[change.y][change.x] = change.brush;
+            pixels[change.y][change.x] = change.brush;
             repaintSquare(change.x, change.y);
         });
     }());

@@ -7,6 +7,7 @@ function validateColorChannel(c) {
     if (typeof c !== "number" || isNaN(c) || c % 1 != 0 || c > 255 || c < 0) {
         throw new Error("Illegal color component " + c + " of type " + typeof(c));
     }
+    return c;
 }
 
 function colourChannelHex(octet) {
@@ -24,12 +25,9 @@ exports.createColorFromHex = function CreateColorFromHex(r, g, b) {
 };
 
 exports.Color = function Color(r, g, b) {
-    r = +r;
-    g = +g;
-    b = +b;
-    validateColorChannel(r);
-    validateColorChannel(g);
-    validateColorChannel(b);
+    r = validateColorChannel(+r);
+    g = validateColorChannel(+g);
+    b = validateColorChannel(+b);
 
     return {
         toHex : function toHex() {

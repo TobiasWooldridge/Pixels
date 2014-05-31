@@ -111,7 +111,10 @@ function pixelDraw(canvasId, palette) {
         $("#brush").css("background", brush);
     }
 
-    function setUpCanvas() {
+    function setUpCanvas(w, h) {
+        dim.w = w;
+        dim.h = h;
+
         $(canvas).bind("click", paint);
         $(canvas).bind("mousedown", startPainting);
         $("body").bind("mouseup", stopPainting);
@@ -148,15 +151,19 @@ function pixelDraw(canvasId, palette) {
     (function init() {
         canvas = document.getElementById("pixels");
         ctx = canvas.getContext('2d');
-        setUpCanvas();
 
         socket = io.connect();
-        socket.on('setPixels', function (data) {
+
+        socket.on('initialize', function initialize(data) {
+            setUpCanvas(data.w, data.h);
+        });
+
+        socket.on('setPixels', function setPixels(data) {
             pixels = data;
             repaintAll();
         });
 
-        socket.on('setPixel', function (change) {
+        socket.on('setPixel', function setPixel(change) {
             pixels[change.y][change.x] = change.brush;
             repaintSquare(change.x, change.y);
         });

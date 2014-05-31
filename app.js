@@ -9,10 +9,15 @@ var path = require('path');
 var color = require('./lib/color')
 var Rgb123 = require('./lib/rgb123').Rgb123;
 
+
+var deviceSerialPort = process.env.PIXELS_SERIAL_PORT || "/dev/tty.usbmodem1421";
+var deviceDisplayWidth = +process.env.PIXELS_DISPLAY_WIDTH || 8;
+var deviceDisplayHeight = +process.env.PIXELS_DISPLAY_HEIGHT || 8;
+
 var app = express();
 
 // all environments
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PIXELS_HTTP_PORT || 3000);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.use(express.favicon());
@@ -36,15 +41,17 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 });
 
 var device = Rgb123({
-    width: 8,
-    height: 8,
-    port: "/dev/tty.usbmodem1421",
+    width: deviceDisplayWidth,
+    height: deviceDisplayHeight,
+    port: deviceSerialPort,
     baudRate: 115200
 });
 
 
 var io = require('socket.io').listen(server);
 io.sockets.on('connection', function (socket) {
+    // When the user connects, set up the canvas and send the current image data
+    socket.emit('initialize', device.getDims())
     socket.emit('setPixels', device.getCanvas());
 
     socket.on('draw', function(change) {

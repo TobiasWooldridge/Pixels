@@ -72,6 +72,9 @@ function pixelDraw(canvasId, palette) {
         var img = createColoredSquare(sq, color);
 
         ctx.putImageData(img, x * sq.w, y * sq.h);
+
+
+        document.getElementById('favicon').href = canvas.toDataURL('image/png');
     }
 
     function repaintAll() {

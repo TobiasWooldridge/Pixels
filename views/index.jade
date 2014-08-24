@@ -6,12 +6,33 @@ block content
   canvas#pixels(width=500, height=500)
   ul#palette
   div#brush
+  button#exportFile(type=submit) Save as PNG
+  button#exportFacebook(type=submit) Post to Facebook
+  div#fb-root
 
 block scripts
+    script(type="text/javascript")
+     |    window.fbAsyncInit = function() {
+     |      FB.init({
+     |        appId  : '524391811024883',
+     |        xfbml  : true,
+     |       version : 'v2.1'
+     |     });
+     |   };
+     |    (function(d, s, id){
+     |      var js, fjs = d.getElementsByTagName(s)[0];
+     |      if (d.getElementById(id)) {return;}
+     |      js = d.createElement(s); js.id = id;
+     |      js.src = "//connect.facebook.net/en_US/sdk.js";
+     |      fjs.parentNode.insertBefore(js, fjs);
+     |    }(document, 'script', 'facebook-jssdk'));
+
+
     script(src="/javascripts/jquery-2.0.3.js")
     script(src="/javascripts/memoize.js")
     script(src="/javascripts/color.js")
     script(src="/javascripts/draw.js")
+    script(src="/javascripts/facebook.js")
     script(src="/socket.io/socket.io.js")
     script(type="text/javascript")
-      | pixelDraw("canvas#pixels", $("ul#palette"));
+      | pixelDraw("pixels", "palette", "brush", "exportFile", "exportFacebook");

@@ -7,7 +7,7 @@ var pixel = require('./routes/pixel');
 var http = require('http');
 var path = require('path');
 var color = require('./lib/color')
-var Rgb123 = require('./lib/rgb123').Rgb123;
+var Rgb123 = process.env.NO_DEVICE ? require('./lib/rgb123').Rgb123Stub : require('./lib/rgb123').Rgb123;
 
 
 var deviceSerialPort = process.env.PIXELS_SERIAL_PORT || "/dev/tty.usbmodem1421";
@@ -56,8 +56,9 @@ io.sockets.on('connection', function (socket) {
 
     socket.on('draw', function(change) {
         var brush = color.parseColor(change.brush);
-        device.setColor(change.x, change.y, brush);
-        socket.broadcast.emit('setPixel', { x: change.x, y: change.y, brush: brush.toRgb() });
-        socket.emit('setPixel', { x: change.x, y: change.y, brush: brush.toRgb() });
+        if (device.setColor(change.x, change.y, brush)) {
+            socket.broadcast.emit('setPixel', { x: change.x, y: change.y, brush: brush.toRgb() });
+            socket.emit('setPixel', { x: change.x, y: change.y, brush: brush.toRgb() });
+        }
     });
 });

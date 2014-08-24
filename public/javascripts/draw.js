@@ -1,8 +1,11 @@
 var Color = require('color');
 
-function pixelDraw(canvasId, palette) {
+function pixelDraw(canvasId, paletteId, brushId, exportFileId, exportFacebookId) {
     var canvas;
     var ctx;
+    var palette;
+    var brushSwatch;
+
     var socket;
 
     var pixels;
@@ -64,25 +67,33 @@ function pixelDraw(canvasId, palette) {
         return Color.parseColor(color || "#000000").toRgb()
     }
 
-    function repaintSquare(x, y) {
+    function updateFavicon() {
+        document.getElementById('favicon').href = canvas.toDataURL('image/png');
+    }
+
+    function repaintSquare(x, y, favicon) {
         updateSquareDimensions();
 
         var color = Color.parseColor(pixels[y][x]).toArray();
 
         var img = createColoredSquare(sq, color);
 
+        // Draw square to the current canvas context
         ctx.putImageData(img, x * sq.w, y * sq.h);
 
-
-        document.getElementById('favicon').href = canvas.toDataURL('image/png');
+        if (favicon !== true) {
+            updateFavicon();
+        }
     }
 
     function repaintAll() {
         for (var x = 0; x < dim.w; x++) {
             for (var y = 0; y < dim.h; y++) {
-                repaintSquare(x, y);
+                repaintSquare(x, y, true);
             }
         }
+
+        updateFavicon();
     };
 
     function paint(e) {
@@ -111,7 +122,7 @@ function pixelDraw(canvasId, palette) {
 
     function setBrush(b) {
         brush = b;
-        $("#brush").css("background", brush);
+        brushSwatch.style.background = b;
     }
 
     function setUpCanvas(w, h) {
@@ -127,38 +138,44 @@ function pixelDraw(canvasId, palette) {
             }
         });
 
-        $(canvas).resize(repaintAll);
+        canvas.onresize = repaintAll;
+    }
 
-        function changeSwatch(swatch, color) {
+    function setUpPalette() {
+        function changeSwatch(color) {
             return function doChangeSwatch() {
-                palette.children().removeClass('active');
-                swatch.addClass('active');
-
                 setBrush(color);
             }
         }
 
+        palette.innerHTML = "";
+
         for (var i = 0; i < paletteColours.length; i++) {
             var color = paletteColours[i];
 
-            var swatch = $("<li></li>").addClass("swatch").css("background", color);
+            var swatch = document.createElement("li");
+            swatch.className = 'swatch';
+            swatch.style.background = color;
 
-            swatch.click(changeSwatch(swatch, color));
+            swatch.onclick = changeSwatch(color);
 
-            palette.append(swatch);
+            palette.appendChild(swatch);
         }
 
-        palette.children().first().click();
+        setBrush(paletteColours[0]);
     }
 
     (function init() {
-        canvas = document.getElementById("pixels");
+        canvas = document.getElementById(canvasId);
         ctx = canvas.getContext('2d');
+        palette = document.getElementById(paletteId);
+        brushSwatch = document.getElementById(brushId);
 
         socket = io.connect();
 
         socket.on('initialize', function initialize(data) {
             setUpCanvas(data.w, data.h);
+            setUpPalette();
         });
 
         socket.on('setPixels', function setPixels(data) {
@@ -169,6 +186,35 @@ function pixelDraw(canvasId, palette) {
         socket.on('setPixel', function setPixel(change) {
             pixels[change.y][change.x] = change.brush;
             repaintSquare(change.x, change.y);
+        });
+
+
+        var saveToFile = document.getElementById(exportFileId);
+
+        $(saveToFile).bind('click', function() {
+            saveCanvasAsFile(canvas, "Mooo.png");
+        });
+
+        var postToFacebook = document.getElementById(exportFileId);
+        $(postToFacebook).bind('click', function() {
+            FB.login(function(response) {
+                var accessToken = response.authResponse.accessToken;
+
+                var fd = new FormData();
+                fd.append("access_token", accessToken);
+                fd.append("source", canvasToBlob(canvas));
+                fd.append("message", "I just drew this using http://github.com/TobiasWooldridge/Pixels !");
+
+                $.ajax({
+                    url:"https://graph.facebook.com/me/photos?access_token=" + accessToken,
+                    type: "POST",
+                    data: fd,
+                    processData: false,
+                    contentType: false,
+                    cache: false
+                });
+
+            }, {scope: 'user_photos,publish_actions,publish_stream'});
         });
     }());
 };
